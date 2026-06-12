@@ -2,7 +2,10 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   ssr: false,
-  css: ['~/assets/css/main.css'],
+  modules: ['@nuxtjs/tailwindcss'],
+  tailwindcss: {
+    cssPath: '~/assets/css/main.css',
+  },
   app: {
     baseURL: process.env.NUXT_APP_BASE_URL ?? '/',
     head: {
@@ -12,11 +15,6 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Partidos y resultados del Mundial 2026' },
       ],
-    },
-  },
-  postcss: {
-    plugins: {
-      '@tailwindcss/postcss': {},
     },
   },
 })

@@ -1,22 +1,10 @@
-@import "tailwindcss";
-@source "../../**/*.vue";
-@source "../../**/*.ts";
-
-@theme {
-  --color-pitch: #080d1a;
-  --color-surface: #0f1829;
-  --color-surface-raised: #172035;
-  --color-surface-hover: #1e2d4a;
-  --color-gold: #f59e0b;
-  --color-gold-light: #fbbf24;
-  --color-border: #1e2d47;
-  --color-border-light: #2a3d5e;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
-    background-color: var(--color-pitch);
-    color: #f1f5f9;
+    @apply bg-pitch text-slate-100;
     -webkit-font-smoothing: antialiased;
   }
 
