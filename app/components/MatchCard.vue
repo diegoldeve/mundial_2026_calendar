@@ -1,13 +1,20 @@
 <template>
-  <article class="bg-surface rounded-xl border border-border overflow-hidden hover:border-border-light transition-all duration-200">
+  <article class="bg-surface rounded-xl border overflow-hidden transition-all duration-200"
+    :class="live ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 'border-border hover:border-border-light'"
+  >
     <!-- Card header -->
     <div class="px-4 py-2.5 bg-surface-raised flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2 text-xs text-slate-400">
-        <span v-if="match.group" class="font-bold text-slate-300">{{ match.group }}</span>
-        <span v-if="match.group" class="text-slate-600">·</span>
-        <span>{{ match.round }}</span>
+      <div class="flex items-center gap-2 text-xs text-slate-400 min-w-0">
+        <span v-if="match.group" class="font-bold text-slate-300 shrink-0">{{ match.group }}</span>
+        <span v-if="match.group" class="text-slate-600 shrink-0">·</span>
+        <span class="truncate">{{ match.round }}</span>
+        <!-- Live badge -->
+        <span v-if="live" class="shrink-0 flex items-center gap-1 bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-[10px] font-bold border border-red-500/30">
+          <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse inline-block" />
+          EN JUEGO
+        </span>
       </div>
-      <span class="text-xs text-slate-500 truncate max-w-[160px]">📍 {{ match.ground }}</span>
+      <span class="text-xs text-slate-500 truncate max-w-[160px] shrink-0">📍 {{ match.ground }}</span>
     </div>
 
     <!-- Teams + Score/Time -->
@@ -19,12 +26,10 @@
           <span
             class="text-xs font-extrabold uppercase tracking-wider leading-tight w-full truncate"
             :class="isWinner(0) ? 'text-gold' : 'text-slate-100'"
-          >
-            {{ match.team1 }}
-          </span>
+          >{{ match.team1 }}</span>
         </div>
 
-        <!-- Score / VS -->
+        <!-- Score / VS / Live -->
         <div class="flex flex-col items-center gap-1 shrink-0 min-w-[120px]">
           <template v-if="match.score">
             <div class="flex items-center gap-3">
@@ -37,6 +42,15 @@
               </span>
             </div>
             <span class="text-[10px] font-bold tracking-widest text-slate-600 uppercase mt-0.5">Final</span>
+          </template>
+          <template v-else-if="live">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span class="text-lg font-black text-red-400">vs</span>
+              <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            </div>
+            <span class="text-xs font-bold text-red-400 mt-0.5">En vivo</span>
+            <span class="text-[10px] text-slate-600">Inició {{ utc6Time }}h UTC-6</span>
           </template>
           <template v-else>
             <span class="text-2xl font-black text-slate-600">vs</span>
@@ -54,9 +68,7 @@
           <span
             class="text-xs font-extrabold uppercase tracking-wider leading-tight w-full truncate"
             :class="isWinner(1) ? 'text-gold' : 'text-slate-100'"
-          >
-            {{ match.team2 }}
-          </span>
+          >{{ match.team2 }}</span>
         </div>
       </div>
 
@@ -77,7 +89,6 @@
         </div>
       </div>
 
-      <!-- Half-time -->
       <p v-if="match.score?.ht" class="mt-2 text-center text-[11px] text-slate-600">
         ({{ match.score.ht[0] }}–{{ match.score.ht[1] }} al descanso)
       </p>
@@ -92,9 +103,7 @@ import { convertToUTC6 } from '~/utils/time'
 
 const props = defineProps<{ match: Match }>()
 
-function getFlag(team: string) {
-  return FLAG_MAP[team] ?? ''
-}
+function getFlag(team: string) { return FLAG_MAP[team] ?? '' }
 
 function isWinner(side: 0 | 1): boolean {
   if (!props.match.score) return false
@@ -108,4 +117,20 @@ const utc6Time = computed(() => convertToUTC6(props.match.time))
 const hasGoals = computed(() =>
   (props.match.goals1?.length ?? 0) > 0 || (props.match.goals2?.length ?? 0) > 0,
 )
+
+const live = computed(() => {
+  if (props.match.score) return false
+
+  const now = new Date()
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  if (props.match.date !== todayStr) return false
+
+  const utcMin = now.getUTCHours() * 60 + now.getUTCMinutes()
+  const currentUTC6 = ((utcMin - 360) % 1440 + 1440) % 1440
+
+  const [h, m] = utc6Time.value.split(':').map(Number)
+  const matchStart = h * 60 + (m ?? 0)
+
+  return currentUTC6 >= matchStart && currentUTC6 < matchStart + 120
+})
 </script>

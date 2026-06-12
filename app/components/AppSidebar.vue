@@ -31,6 +31,11 @@
         <span>Posiciones</span>
       </NuxtLink>
 
+      <NuxtLink to="/estadisticas" :class="navClass($route.path === '/estadisticas')" @click="$emit('close')">
+        <span class="text-lg leading-none">📊</span>
+        <span>Estadísticas</span>
+      </NuxtLink>
+
       <NuxtLink to="/mis-equipos" :class="navClass($route.path === '/mis-equipos')" @click="$emit('close')">
         <span class="text-lg leading-none">⭐</span>
         <div class="flex-1 flex items-center justify-between">

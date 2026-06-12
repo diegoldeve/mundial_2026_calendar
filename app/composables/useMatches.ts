@@ -47,6 +47,19 @@ export interface GroupStanding {
   standings: TeamStanding[]
 }
 
+export interface TopScorer {
+  name: string
+  goals: number
+  team: string
+}
+
+export interface TeamGoalStat {
+  team: string
+  gf: number
+  ga: number
+  mp: number
+}
+
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
 let _fetchStarted = false
 
@@ -76,19 +89,80 @@ export function useMatches() {
 
   const todayStr = getTodayStr()
 
+  function isRealTeam(name: string): boolean {
+    return name === 'USA' || /[a-z]/.test(name)
+  }
+
+  // ── Live detection ─────────────────────────────────────────
+
+  function isLive(match: Match): boolean {
+    if (match.score) return false
+    if (match.date !== todayStr) return false
+
+    const now = new Date()
+    const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes()
+    const currentUTC6 = ((utcMinutes - 360) % 1440 + 1440) % 1440
+
+    const [h, m] = convertToUTC6(match.time).split(':').map(Number)
+    const matchStart = h * 60 + (m ?? 0)
+
+    return currentUTC6 >= matchStart && currentUTC6 < matchStart + 120
+  }
+
+  // ── Statistics ─────────────────────────────────────────────
+
+  const topScorers = computed((): TopScorer[] => {
+    const map = new Map<string, TopScorer>()
+
+    for (const m of matches.value) {
+      if (!m.score) continue
+      for (const g of m.goals1 ?? []) {
+        const e = map.get(g.name) ?? { name: g.name, goals: 0, team: m.team1 }
+        e.goals++
+        map.set(g.name, e)
+      }
+      for (const g of m.goals2 ?? []) {
+        const e = map.get(g.name) ?? { name: g.name, goals: 0, team: m.team2 }
+        e.goals++
+        map.set(g.name, e)
+      }
+    }
+
+    return [...map.values()]
+      .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name))
+      .slice(0, 5)
+  })
+
+  const teamGoalStats = computed((): TeamGoalStat[] => {
+    const map = new Map<string, TeamGoalStat>()
+
+    for (const m of matches.value) {
+      if (!m.score || !isRealTeam(m.team1) || !isRealTeam(m.team2)) continue
+      const [g1, g2] = m.score.ft
+
+      if (!map.has(m.team1)) map.set(m.team1, { team: m.team1, gf: 0, ga: 0, mp: 0 })
+      if (!map.has(m.team2)) map.set(m.team2, { team: m.team2, gf: 0, ga: 0, mp: 0 })
+
+      const t1 = map.get(m.team1)!
+      const t2 = map.get(m.team2)!
+      t1.gf += g1; t1.ga += g2; t1.mp++
+      t2.gf += g2; t2.ga += g1; t2.mp++
+    }
+
+    return [...map.values()]
+  })
+
   // ── Standings ──────────────────────────────────────────────
 
   function groupStandings(groupName: string): TeamStanding[] {
     const groupMatches = matches.value.filter(m => m.group === groupName)
     const map = new Map<string, TeamStanding>()
 
-    // Initialize all teams (including those with no results yet)
     for (const m of groupMatches) {
       if (!map.has(m.team1)) map.set(m.team1, { team: m.team1, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 })
       if (!map.has(m.team2)) map.set(m.team2, { team: m.team2, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 })
     }
 
-    // Accumulate stats from completed matches
     for (const m of groupMatches) {
       if (!m.score) continue
       const [g1, g2] = m.score.ft
@@ -113,9 +187,7 @@ export function useMatches() {
 
   const allGroups = computed(() => {
     const set = new Set<string>()
-    for (const m of matches.value) {
-      if (m.group) set.add(m.group)
-    }
+    for (const m of matches.value) if (m.group) set.add(m.group)
     return [...set].sort()
   })
 
@@ -124,10 +196,6 @@ export function useMatches() {
   )
 
   // ── Teams ──────────────────────────────────────────────────
-
-  function isRealTeam(name: string): boolean {
-    return name === 'USA' || /[a-z]/.test(name)
-  }
 
   const allTeams = computed(() => {
     const names = new Set<string>()
@@ -189,7 +257,8 @@ export function useMatches() {
     todayStr, todayMatches,
     allDates, matchesByDate, matchesForDate, matchesForTeams,
     allTeams, allGroups, allStandings,
+    topScorers, teamGoalStats,
     getFlag, getMatchTime, getTimezone, getUTC6Time,
-    formatDate, formatDateShort, isPast,
+    formatDate, formatDateShort, isPast, isLive,
   }
 }
