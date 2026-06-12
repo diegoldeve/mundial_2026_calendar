@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "../../**/*.vue";
+@source "../../**/*.ts";
 
 @theme {
   --color-pitch: #080d1a;
