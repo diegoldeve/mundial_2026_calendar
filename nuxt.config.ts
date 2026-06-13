@@ -1,3 +1,7 @@
+// GITHUB_REPOSITORY = "owner/repo" in CI — use the repo name as the base URL for GitHub Pages
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1]
+const baseURL = repoName ? `/${repoName}/` : '/'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -6,7 +10,7 @@ export default defineNuxtConfig({
     cssPath: '~/assets/css/main.css',
   },
   app: {
-    baseURL: process.env.NUXT_APP_BASE_URL ?? '/',
+    baseURL,
     head: {
       title: 'Mundial 2026',
       meta: [
