@@ -31,6 +31,11 @@
         <span>Posiciones</span>
       </NuxtLink>
 
+      <NuxtLink to="/eliminatorias" :class="navClass($route.path === '/eliminatorias')" @click="$emit('close')">
+        <span class="text-lg leading-none">🎯</span>
+        <span>Eliminatorias</span>
+      </NuxtLink>
+
       <NuxtLink to="/estadisticas" :class="navClass($route.path === '/estadisticas')" @click="$emit('close')">
         <span class="text-lg leading-none">📊</span>
         <span>Estadísticas</span>
